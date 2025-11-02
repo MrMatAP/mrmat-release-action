@@ -1,0 +1,29 @@
+name: MrMat Release Action
+author: MrMat
+description: A GitHub Action to release a new version of a project.
+
+inputs:
+    github_token:
+        description: Token to use for GitHub API requests.
+        required: true
+    release_name:
+        description: The release name.
+        required: true
+    release_description:
+        description: The release description.
+        required: false
+    release_version:
+        description: The release version.
+        required: true
+    update_latest:
+        description: Shift the latest tag to the next version.
+        required: false
+        default: 'false'
+
+outputs:
+    id:
+        description: The release id.
+
+runs:
+    using: node20
+    main: dist/index.js
