@@ -1,0 +1,100 @@
+#
+# Perform a regular build on any branch except main
+
+name: build
+
+on:
+    push:
+    pull_request:
+        types: [assigned, opened, synchronize, reopened]
+
+jobs:
+    prep:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        outputs:
+            abort: ${{ steps.debounce.outputs.abort }}
+            version: ${{ steps.version.outputs.version }}
+        steps:
+            - name: Checkout out our code
+              uses: actions/checkout@v5.0.0
+            - name:
+                  Abort the build on push if we have a corresponding pull
+                  request
+              id: debounce
+              uses: MrMatAP/mrmat-build-avoider-action@1.0.55
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+            - name: Version the project
+              id: version
+              uses: MrMatAP/mrmat-versioning-action@1.0.7
+              with:
+                  ecosystem: javascript
+                  major: 1
+                  minor: 0
+
+    # A regular project build. Test results will explicitly be reported during a pull request build
+    build:
+        runs-on: ubuntu-latest
+        needs: prep
+        if: ${{ needs.prep.outputs.abort != 'true' }}
+        permissions:
+            contents: read
+        env:
+            MRMAT_VERSION: ${{ needs.prep.outputs.version }}
+        steps:
+            - name: Checkout out our code
+              uses: actions/checkout@v5.0.0
+            - name: Setup Node
+              uses: actions/setup-node@v5.0.0
+              with:
+                  node-version: 24.7.0
+                  cache: npm
+            - name: Install Dependencies
+              run: npm ci
+            - name: Apply version
+              run:
+                  npm version ${{ needs.prep.outputs.version }}
+                  --no-git-tag-version
+            - name: Verify dist/ results match with src/
+              if:
+                  ${{ github.event_name == 'pull_request' && github.base_ref ==
+                  'main' }}
+              run: |
+                  npm run bundle
+                  if [ ! -d dist/ ]; then
+                    echo "::error title=Action Release::dist/ directory not found"
+                    exit 1
+                  fi
+                  if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+                    echo "::error title=Action Release::Detected uncommitted changes in the dist/ directory. GH Actions need to be built and committed outside CI"
+                    exit 1
+                  fi
+            - name: Lint
+              run: npm run ci-lint
+            - name: Test
+              run: npm run ci-test
+
+    # The release job only executes when pushing to the main branch
+    release:
+        if:
+            ${{ github.event_name == 'push' && github.ref == 'refs/heads/main'
+            }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        needs:
+            - prep
+            - build
+        steps:
+            - name: Create Release
+              id: create_release
+              uses: ./
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  release_name: Release ${{ needs.prep.outputs.version }}
+                  release_version: ${{ needs.prep.outputs.version }}
+                  release_description: |
+                      Release ${{ needs.prep.outputs.version }}
+                  update_latest: true
