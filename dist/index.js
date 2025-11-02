@@ -31284,7 +31284,7 @@ async function run() {
                 repo: githubExports.context.repo.repo,
                 tag: 'latest',
                 message: 'Latest release',
-                object: release_commit,
+                object: githubExports.context.sha,
                 type: 'commit'
             });
             if (resp.status !== 201) {

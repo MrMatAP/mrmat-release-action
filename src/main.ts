@@ -47,7 +47,7 @@ export async function run(): Promise<void> {
                 repo: github.context.repo.repo,
                 tag: 'latest',
                 message: 'Latest release',
-                object: release_commit,
+                object: github.context.sha,
                 type: 'commit'
             })
             if (resp.status !== 201) {
