@@ -37,14 +37,31 @@ export async function run(): Promise<void> {
             if (tag_resp.status !== 201) {
                 core.setFailed('Failed to create/update latest tag')
             }
-            const ref_resp = await gh.rest.git.updateRef({
+            const ref_get = await gh.rest.git.getRef({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                ref: 'heads/latest',
-                sha: github.context.sha
+                ref: 'tags/latest'
             })
-            if (ref_resp.status !== 200) {
-                core.setFailed('Failed to create/update latest ref')
+            if (ref_get.status !== 404) {
+                const ref_resp = await gh.rest.git.updateRef({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    ref: 'tags/latest',
+                    sha: github.context.sha
+                })
+                if (ref_resp.status !== 200) {
+                    core.setFailed('Failed to update latest ref')
+                }
+            } else {
+                const ref_resp = await gh.rest.git.createRef({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    ref: 'tags/latest',
+                    sha: github.context.sha
+                })
+                if (ref_resp.status !== 201) {
+                    core.setFailed('Failed to create latest ref')
+                }
             }
             core.info(
                 `Created/updated latest tag to point to ${github.context.sha}`
