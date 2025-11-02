@@ -31256,8 +31256,6 @@ async function run() {
         const release_version = coreExports.getInput('release_version');
         const update_latest = coreExports.getInput('update_latest');
         const gh = githubExports.getOctokit(github_token);
-        //
-        // Create the new release
         const resp = await gh.rest.repos.createRelease({
             owner: githubExports.context.repo.owner,
             repo: githubExports.context.repo.repo,
@@ -31268,17 +31266,8 @@ async function run() {
             prerelease: false,
             generate_release_notes: true
         });
-        const { id: releaseId, target_commitish: release_commit } = resp.data;
-        //
-        // Shift the latest tag if requested
+        const { id: releaseId } = resp.data;
         if (update_latest === 'true') {
-            // const resp = await gh.rest.repos.listTags({
-            //     owner: github.context.repo.owner,
-            //     repo: github.context.repo.repo
-            // })
-            //const filtered_tags= resp.data.filter(tag => tag.name === 'latest')
-            //if (filtered_tags.length === 0) {
-            //}
             const resp = await gh.rest.git.createTag({
                 owner: githubExports.context.repo.owner,
                 repo: githubExports.context.repo.repo,
@@ -31290,7 +31279,7 @@ async function run() {
             if (resp.status !== 201) {
                 coreExports.setFailed('Failed to create/update latest tag');
             }
-            coreExports.info(`Created/updated latest tag to point to ${release_commit}`);
+            coreExports.info(`Created/updated latest tag to point to ${githubExports.context.sha}`);
         }
         coreExports.setOutput('id', releaseId.toString());
     }
