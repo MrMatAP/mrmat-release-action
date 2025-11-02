@@ -26,7 +26,7 @@ export async function run(): Promise<void> {
         const { id: releaseId } = resp.data as Release
 
         if (update_latest === 'true') {
-            const resp = await gh.rest.git.createTag({
+            const tag_resp = await gh.rest.git.createTag({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 tag: 'latest',
@@ -34,8 +34,17 @@ export async function run(): Promise<void> {
                 object: github.context.sha,
                 type: 'commit'
             })
-            if (resp.status !== 201) {
+            if (tag_resp.status !== 201) {
                 core.setFailed('Failed to create/update latest tag')
+            }
+            const ref_resp = await gh.rest.git.updateRef({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                ref: 'heads/latest',
+                sha: github.context.sha
+            })
+            if (ref_resp.status !== 200) {
+                core.setFailed('Failed to create/update latest ref')
             }
             core.info(
                 `Created/updated latest tag to point to ${github.context.sha}`
