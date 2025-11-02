@@ -13,10 +13,6 @@ export async function run(): Promise<void> {
         const update_latest: string = core.getInput('update_latest')
 
         const gh = github.getOctokit(github_token)
-
-        //
-        // Create the new release
-
         const resp = await gh.rest.repos.createRelease({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
@@ -27,21 +23,9 @@ export async function run(): Promise<void> {
             prerelease: false,
             generate_release_notes: true
         })
-        const { id: releaseId, target_commitish: release_commit } =
-            resp.data as Release
-
-        //
-        // Shift the latest tag if requested
+        const { id: releaseId } = resp.data as Release
 
         if (update_latest === 'true') {
-            // const resp = await gh.rest.repos.listTags({
-            //     owner: github.context.repo.owner,
-            //     repo: github.context.repo.repo
-            // })
-            //const filtered_tags= resp.data.filter(tag => tag.name === 'latest')
-            //if (filtered_tags.length === 0) {
-            //}
-
             const resp = await gh.rest.git.createTag({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
@@ -54,7 +38,7 @@ export async function run(): Promise<void> {
                 core.setFailed('Failed to create/update latest tag')
             }
             core.info(
-                `Created/updated latest tag to point to ${release_commit}`
+                `Created/updated latest tag to point to ${github.context.sha}`
             )
         }
 
