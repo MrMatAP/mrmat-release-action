@@ -31268,7 +31268,7 @@ async function run() {
         });
         const { id: releaseId } = resp.data;
         if (update_latest === 'true') {
-            const resp = await gh.rest.git.createTag({
+            const tag_resp = await gh.rest.git.createTag({
                 owner: githubExports.context.repo.owner,
                 repo: githubExports.context.repo.repo,
                 tag: 'latest',
@@ -31276,8 +31276,17 @@ async function run() {
                 object: githubExports.context.sha,
                 type: 'commit'
             });
-            if (resp.status !== 201) {
+            if (tag_resp.status !== 201) {
                 coreExports.setFailed('Failed to create/update latest tag');
+            }
+            const ref_resp = await gh.rest.git.updateRef({
+                owner: githubExports.context.repo.owner,
+                repo: githubExports.context.repo.repo,
+                ref: 'heads/latest',
+                sha: githubExports.context.sha
+            });
+            if (ref_resp.status !== 200) {
+                coreExports.setFailed('Failed to create/update latest ref');
             }
             coreExports.info(`Created/updated latest tag to point to ${githubExports.context.sha}`);
         }
