@@ -28095,7 +28095,7 @@ var once = /*@__PURE__*/getDefaultExportFromCjs(onceExports);
 
 const logOnceCode = once((deprecation) => console.warn(deprecation));
 const logOnceHeaders = once((deprecation) => console.warn(deprecation));
-class RequestError extends Error {
+let RequestError$1 = class RequestError extends Error {
   constructor(message, statusCode, options) {
     super(message);
     if (Error.captureStackTrace) {
@@ -28143,7 +28143,7 @@ class RequestError extends Error {
       }
     });
   }
-}
+};
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
@@ -28196,7 +28196,7 @@ function fetchWrapper(requestOptions) {
       if (status < 400) {
         return;
       }
-      throw new RequestError(response.statusText, status, {
+      throw new RequestError$1(response.statusText, status, {
         response: {
           url,
           status,
@@ -28207,7 +28207,7 @@ function fetchWrapper(requestOptions) {
       });
     }
     if (status === 304) {
-      throw new RequestError("Not modified", status, {
+      throw new RequestError$1("Not modified", status, {
         response: {
           url,
           status,
@@ -28219,7 +28219,7 @@ function fetchWrapper(requestOptions) {
     }
     if (status >= 400) {
       const data = await getResponseData(response);
-      const error = new RequestError(toErrorMessage(data), status, {
+      const error = new RequestError$1(toErrorMessage(data), status, {
         response: {
           url,
           status,
@@ -28239,7 +28239,7 @@ function fetchWrapper(requestOptions) {
       data
     };
   }).catch((error) => {
-    if (error instanceof RequestError)
+    if (error instanceof RequestError$1)
       throw error;
     else if (error.name === "AbortError")
       throw error;
@@ -28251,7 +28251,7 @@ function fetchWrapper(requestOptions) {
         message = error.cause;
       }
     }
-    throw new RequestError(message, 500, {
+    throw new RequestError$1(message, 500, {
       request: requestOptions
     });
   });
@@ -31248,6 +31248,44 @@ function requireGithub () {
 
 var githubExports = requireGithub();
 
+class RequestError extends Error {
+  name;
+  /**
+   * http status code
+   */
+  status;
+  /**
+   * Request options that lead to the error.
+   */
+  request;
+  /**
+   * Response object if a response was received
+   */
+  response;
+  constructor(message, statusCode, options) {
+    super(message);
+    this.name = "HttpError";
+    this.status = Number.parseInt(statusCode);
+    if (Number.isNaN(this.status)) {
+      this.status = 0;
+    }
+    if ("response" in options) {
+      this.response = options.response;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(
+          /(?<! ) .*$/,
+          " [REDACTED]"
+        )
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+  }
+}
+
 async function run() {
     try {
         const github_token = coreExports.getInput('github_token');
@@ -31279,34 +31317,43 @@ async function run() {
             if (tag_resp.status !== 201) {
                 coreExports.setFailed('Failed to create/update latest tag');
             }
-            const ref_get = await gh.rest.git.getRef({
-                owner: githubExports.context.repo.owner,
-                repo: githubExports.context.repo.repo,
-                ref: 'tags/latest'
-            });
-            if (ref_get.status !== 404) {
-                const ref_resp = await gh.rest.git.updateRef({
+            try {
+                await gh.rest.git.getRef({
                     owner: githubExports.context.repo.owner,
                     repo: githubExports.context.repo.repo,
-                    ref: 'tags/latest',
-                    sha: githubExports.context.sha
+                    ref: 'tags/latest'
                 });
-                if (ref_resp.status !== 200) {
-                    coreExports.setFailed('Failed to update latest ref');
-                }
             }
-            else {
-                const ref_resp = await gh.rest.git.createRef({
-                    owner: githubExports.context.repo.owner,
-                    repo: githubExports.context.repo.repo,
-                    ref: 'tags/latest',
-                    sha: githubExports.context.sha
-                });
-                if (ref_resp.status !== 201) {
-                    coreExports.setFailed('Failed to create latest ref');
+            catch (error) {
+                if (!(error instanceof RequestError)) {
+                    coreExports.setFailed('Failed to communicate with GitHub');
+                    return;
                 }
+                if (error.status === 404) {
+                    // Create the new ref
+                    const ref_resp = await gh.rest.git.createRef({
+                        owner: githubExports.context.repo.owner,
+                        repo: githubExports.context.repo.repo,
+                        ref: 'tags/latest',
+                        sha: githubExports.context.sha
+                    });
+                    if (ref_resp.status !== 201) {
+                        coreExports.setFailed('Failed to create latest ref');
+                    }
+                }
+                else {
+                    const ref_resp = await gh.rest.git.updateRef({
+                        owner: githubExports.context.repo.owner,
+                        repo: githubExports.context.repo.repo,
+                        ref: 'tags/latest',
+                        sha: githubExports.context.sha
+                    });
+                    if (ref_resp.status !== 200) {
+                        coreExports.setFailed('Failed to update latest ref');
+                    }
+                }
+                coreExports.info(`Created/updated latest tag to point to ${githubExports.context.sha}`);
             }
-            coreExports.info(`Created/updated latest tag to point to ${githubExports.context.sha}`);
         }
         coreExports.setOutput('id', releaseId.toString());
     }
