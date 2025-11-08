@@ -13,8 +13,9 @@ export async function run(): Promise<void> {
         const release_version: string = core.getInput('release_version')
         const update_latest: string = core.getInput('update_latest')
 
-        const gh = github.getOctokit(github_token)
-        const resp = await gh.rest.repos.createRelease({
+        const octokit = github.getOctokit(github_token)
+
+        const resp = await octokit.rest.repos.createRelease({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
             tag_name: release_version,
@@ -27,7 +28,7 @@ export async function run(): Promise<void> {
         const { id: releaseId } = resp.data as Release
 
         if (update_latest === 'true') {
-            const tag_resp = await gh.rest.git.createTag({
+            const tag_resp = await octokit.rest.git.createTag({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 tag: 'latest',
@@ -39,19 +40,20 @@ export async function run(): Promise<void> {
                 core.setFailed('Failed to create/update latest tag')
             }
             try {
-                await gh.rest.git.getRef({
+                await octokit.rest.git.getRef({
                     owner: github.context.repo.owner,
                     repo: github.context.repo.repo,
                     ref: 'tags/latest'
                 })
             } catch (error) {
+                core.info(`error is of type {typeof error}: ${typeof error}`)
                 if (!(error instanceof RequestError)) {
                     core.setFailed('Failed to communicate with GitHub')
                     return
                 }
                 if (error.status === 404) {
                     // Create the new ref
-                    const ref_resp = await gh.rest.git.createRef({
+                    const ref_resp = await octokit.rest.git.createRef({
                         owner: github.context.repo.owner,
                         repo: github.context.repo.repo,
                         ref: 'tags/latest',
@@ -61,7 +63,7 @@ export async function run(): Promise<void> {
                         core.setFailed('Failed to create latest ref')
                     }
                 } else {
-                    const ref_resp = await gh.rest.git.updateRef({
+                    const ref_resp = await octokit.rest.git.updateRef({
                         owner: github.context.repo.owner,
                         repo: github.context.repo.repo,
                         ref: 'tags/latest',
