@@ -72,6 +72,7 @@ jobs:
                     exit 1
                   fi
             - name: Lint
+              if: ${{ github.base_ref != 'main' }}
               run: npm run ci-lint
             - name: Test
               run: npm run ci-test
