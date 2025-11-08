@@ -10,14 +10,30 @@ const { run } = await import('../src/main.js')
 describe('GitHub Actions Interface', () => {
     test.each([
         {
-            repo: { owner: 'MrMat', repo: 'test' },
+            repo: { owner: 'MrMat', repo: 'test0' },
             release_name: 'v1.0.0',
             release_description: 'Release description',
             release_version: 'v1.0.0',
             update_latest: false,
+            circumstances: {
+                has_latest_tag: true
+            },
             expected: {
                 desc: 'Can create a release without updating the latest tag',
                 id: 1
+            }
+        },
+        {
+            repo: { owner: 'MrMat', repo: 'test1' },
+            release_name: 'v1.0.0',
+            release_description: 'Release description',
+            release_version: 'v1.0.0',
+            update_latest: true,
+            circumstances: {
+                has_latest_tag: false
+            },
+            expected: {
+                desc: 'Can create a release and update the latest tag'
             }
         }
     ])(
@@ -52,6 +68,12 @@ describe('GitHub Actions Interface', () => {
                     target_commitish: 'some-commit'
                 }
             })
+            // const getRef = jest.fn().mockImplementation(() => {
+            //     if (! circumstances.has_latest_tag) {
+            //         throw new RequestError()
+            //     }
+            // })
+
             // @ts-expect-error - Mocking the getOctokit function
             github.getOctokit.mockImplementation(() => {
                 return {
