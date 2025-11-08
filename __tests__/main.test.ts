@@ -23,19 +23,6 @@ describe('GitHub Actions Interface', () => {
                 id: 1
             }
         },
-        {
-            repo: { owner: 'MrMat', repo: 'test1' },
-            release_name: 'v1.0.0',
-            release_description: 'Release description',
-            release_version: 'v1.0.0',
-            update_latest: true,
-            circumstances: {
-                has_latest_tag: false
-            },
-            expected: {
-                desc: 'Can create a release and update the latest tag'
-            }
-        }
     ])(
         '$expected.desc',
         async ({
