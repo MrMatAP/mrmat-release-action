@@ -21,8 +21,10 @@ inputs:
         default: 'false'
 
 outputs:
-    id:
+    release_id:
         description: The release id.
+    latest_url:
+        description: The URL to the latest tag, if update_latest was true
 
 runs:
     using: node20
