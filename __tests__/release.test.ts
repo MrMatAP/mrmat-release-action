@@ -7,7 +7,7 @@ jest.unstable_mockModule('@actions/github', () => github)
 
 const { run } = await import('../src/main.js')
 
-describe('GitHub Actions Interface', () => {
+describe('Release Tests', () => {
     test.each([
         {
             repo: { owner: 'MrMat', repo: 'test0' },
@@ -20,9 +20,9 @@ describe('GitHub Actions Interface', () => {
             },
             expected: {
                 desc: 'Can create a release without updating the latest tag',
-                id: 1
+                release_id: 1
             }
-        },
+        }
     ])(
         '$expected.desc',
         async ({
@@ -51,15 +51,10 @@ describe('GitHub Actions Interface', () => {
             })
             const createRelease = jest.fn().mockReturnValue({
                 data: {
-                    id: expected.id,
+                    id: expected.release_id,
                     target_commitish: 'some-commit'
                 }
             })
-            // const getRef = jest.fn().mockImplementation(() => {
-            //     if (! circumstances.has_latest_tag) {
-            //         throw new RequestError()
-            //     }
-            // })
 
             // @ts-expect-error - Mocking the getOctokit function
             github.getOctokit.mockImplementation(() => {
@@ -87,9 +82,10 @@ describe('GitHub Actions Interface', () => {
             })
             expect(core.setOutput).toHaveBeenNthCalledWith(
                 1,
-                'id',
-                `${expected.id}`
+                'release_id',
+                `${expected.release_id}`
             )
+            expect(core.setOutput).toHaveBeenNthCalledWith(2, 'latest_url', '')
             jest.resetAllMocks()
         }
     )

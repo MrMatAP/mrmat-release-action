@@ -1,9 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import type { components } from '@octokit/openapi-types'
 import { RequestError } from '@octokit/request-error'
-
-type Release = components['schemas']['release']
+import { createRelease, updateLatest } from './release.js'
 
 export async function run(): Promise<void> {
     try {
@@ -15,74 +13,36 @@ export async function run(): Promise<void> {
 
         const octokit = github.getOctokit(github_token)
 
-        const resp = await octokit.rest.repos.createRelease({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            tag_name: release_version,
-            name: release_name,
-            body: release_description,
-            draft: false,
-            prerelease: false,
-            generate_release_notes: true
-        })
-        const { id: releaseId } = resp.data as Release
+        const releaseId = await createRelease(
+            octokit,
+            github.context.repo.owner,
+            github.context.repo.repo,
+            release_name,
+            release_description,
+            release_version
+        )
+        core.info(`Created release ${releaseId}`)
+        core.setOutput('release_id', releaseId)
 
         if (update_latest === 'true') {
-            const tag_resp = await octokit.rest.git.createTag({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                tag: 'latest',
-                message: 'Latest release',
-                object: github.context.sha,
-                type: 'commit'
-            })
-            if (tag_resp.status !== 201) {
-                core.setFailed('Failed to create/update latest tag')
-            }
-            try {
-                await octokit.rest.git.getRef({
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo,
-                    ref: 'tags/latest'
-                })
-            } catch (error) {
-                core.info(`error is of type {typeof error}: ${typeof error}`)
-                if (!(error instanceof RequestError)) {
-                    core.setFailed('Failed to communicate with GitHub')
-                    return
-                }
-                if (error.status === 404) {
-                    // Create the new ref
-                    const ref_resp = await octokit.rest.git.createRef({
-                        owner: github.context.repo.owner,
-                        repo: github.context.repo.repo,
-                        ref: 'tags/latest',
-                        sha: github.context.sha
-                    })
-                    if (ref_resp.status !== 201) {
-                        core.setFailed('Failed to create latest ref')
-                    }
-                } else {
-                    const ref_resp = await octokit.rest.git.updateRef({
-                        owner: github.context.repo.owner,
-                        repo: github.context.repo.repo,
-                        ref: 'tags/latest',
-                        sha: github.context.sha
-                    })
-                    if (ref_resp.status !== 200) {
-                        core.setFailed('Failed to update latest ref')
-                    }
-                }
-                core.info(
-                    `Created/updated latest tag to point to ${github.context.sha}`
-                )
-            }
+            const latest = await updateLatest(
+                octokit,
+                github.context.repo.owner,
+                github.context.repo.repo,
+                github.context.sha
+            )
+            core.info(
+                `Updated latest ref ${latest.ref} to point to ${github.context.sha}`
+            )
+            core.setOutput('latest_url', latest.url)
+        } else {
+            core.setOutput('latest_url', '')
         }
-        core.setOutput('id', releaseId.toString())
     } catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message)
+        if (error instanceof RequestError) {
+            core.setFailed(`[${error.status}] ${error.message}`)
+        } else {
+            core.setFailed(error as string)
         }
-        core.error(error as string)
     }
 }

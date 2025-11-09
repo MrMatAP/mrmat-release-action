@@ -31286,6 +31286,61 @@ class RequestError extends Error {
   }
 }
 
+async function createRelease(octokit, owner, repo, release_name, release_description, release_version) {
+    const release = await octokit.rest.repos.createRelease({
+        owner: owner,
+        repo: repo,
+        tag_name: release_version,
+        name: release_name,
+        body: release_description,
+        draft: false,
+        prerelease: false,
+        generate_release_notes: true
+    });
+    return release.data.id.toString();
+}
+async function hasLatest(octokit, owner, repo) {
+    try {
+        await octokit.rest.git.getRef({
+            owner: owner,
+            repo: repo,
+            ref: 'tags/latest'
+        });
+        return true;
+    }
+    catch (error) {
+        if (error instanceof RequestError && error.status === 404) {
+            return false;
+        }
+        else {
+            throw error;
+        }
+    }
+}
+async function updateLatest(octokit, owner, repo, sha) {
+    let latest;
+    if (await hasLatest(octokit, owner, repo)) {
+        latest = await octokit.rest.git.updateRef({
+            owner: owner,
+            repo: repo,
+            ref: 'tags/latest',
+            sha: sha
+        });
+    }
+    else {
+        latest = await octokit.rest.git.createRef({
+            owner: owner,
+            repo: repo,
+            ref: 'refs/tags/latest',
+            sha: sha
+        });
+    }
+    return {
+        ref: latest.data.ref,
+        url: latest.data.url
+    };
+}
+
 async function run() {
     try {
         const github_token = coreExports.getInput('github_token');
@@ -31294,75 +31349,25 @@ async function run() {
         const release_version = coreExports.getInput('release_version');
         const update_latest = coreExports.getInput('update_latest');
         const octokit = githubExports.getOctokit(github_token);
-        const resp = await octokit.rest.repos.createRelease({
-            owner: githubExports.context.repo.owner,
-            repo: githubExports.context.repo.repo,
-            tag_name: release_version,
-            name: release_name,
-            body: release_description,
-            draft: false,
-            prerelease: false,
-            generate_release_notes: true
-        });
-        const { id: releaseId } = resp.data;
+        const releaseId = await createRelease(octokit, githubExports.context.repo.owner, githubExports.context.repo.repo, release_name, release_description, release_version);
+        coreExports.info(`Created release ${releaseId}`);
+        coreExports.setOutput('release_id', releaseId);
         if (update_latest === 'true') {
-            const tag_resp = await octokit.rest.git.createTag({
-                owner: githubExports.context.repo.owner,
-                repo: githubExports.context.repo.repo,
-                tag: 'latest',
-                message: 'Latest release',
-                object: githubExports.context.sha,
-                type: 'commit'
-            });
-            if (tag_resp.status !== 201) {
-                coreExports.setFailed('Failed to create/update latest tag');
-            }
-            try {
-                await octokit.rest.git.getRef({
-                    owner: githubExports.context.repo.owner,
-                    repo: githubExports.context.repo.repo,
-                    ref: 'tags/latest'
-                });
-            }
-            catch (error) {
-                coreExports.info(`error is of type {typeof error}: ${typeof error}`);
-                if (!(error instanceof RequestError)) {
-                    coreExports.setFailed('Failed to communicate with GitHub');
-                    return;
-                }
-                if (error.status === 404) {
-                    // Create the new ref
-                    const ref_resp = await octokit.rest.git.createRef({
-                        owner: githubExports.context.repo.owner,
-                        repo: githubExports.context.repo.repo,
-                        ref: 'tags/latest',
-                        sha: githubExports.context.sha
-                    });
-                    if (ref_resp.status !== 201) {
-                        coreExports.setFailed('Failed to create latest ref');
-                    }
-                }
-                else {
-                    const ref_resp = await octokit.rest.git.updateRef({
-                        owner: githubExports.context.repo.owner,
-                        repo: githubExports.context.repo.repo,
-                        ref: 'tags/latest',
-                        sha: githubExports.context.sha
-                    });
-                    if (ref_resp.status !== 200) {
-                        coreExports.setFailed('Failed to update latest ref');
-                    }
-                }
-                coreExports.info(`Created/updated latest tag to point to ${githubExports.context.sha}`);
-            }
+            const latest = await updateLatest(octokit, githubExports.context.repo.owner, githubExports.context.repo.repo, githubExports.context.sha);
+            coreExports.info(`Updated latest ref ${latest.ref} to point to ${githubExports.context.sha}`);
+            coreExports.setOutput('latest_url', latest.url);
         }
-        coreExports.setOutput('id', releaseId.toString());
+        else {
+            coreExports.setOutput('latest_url', '');
+        }
     }
     catch (error) {
-        if (error instanceof Error) {
-            coreExports.setFailed(error.message);
+        if (error instanceof RequestError) {
+            coreExports.setFailed(`[${error.status}] ${error.message}`);
         }
-        coreExports.error(error);
+        else {
+            coreExports.setFailed(error);
+        }
     }
 }
 
