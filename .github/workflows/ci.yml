@@ -28,7 +28,7 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
             - name: Version the project
               id: version
-              uses: MrMatAP/mrmat-versioning-action@1.0.7
+              uses: MrMatAP/mrmat-versioning-action@latest
               with:
                   ecosystem: javascript
                   major: 1
