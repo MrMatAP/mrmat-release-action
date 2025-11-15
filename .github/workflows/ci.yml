@@ -23,9 +23,9 @@ jobs:
                   Abort the build on push if we have a corresponding pull
                   request
               id: debounce
-              uses: MrMatAP/mrmat-build-avoider-action@1.0.55
+              uses: MrMatAP/mrmat-debounce-action@latest
               with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
             - name: Version the project
               id: version
               uses: MrMatAP/mrmat-versioning-action@latest
