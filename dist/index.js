@@ -31309,7 +31309,10 @@ async function hasLatest(octokit, owner, repo) {
         return true;
     }
     catch (error) {
-        if (error instanceof RequestError && error.status === 404) {
+        // Treat any error that exposes a numeric status of 404 as "not found".
+        // This covers both Octokit RequestError and other HTTPError-like errors
+        // that carry a `status` field.
+        if (error?.status === 404) {
             return false;
         }
         else {
@@ -31350,7 +31353,7 @@ async function run() {
         const update_latest = coreExports.getInput('update_latest');
         const octokit = githubExports.getOctokit(github_token);
         const releaseId = await createRelease(octokit, githubExports.context.repo.owner, githubExports.context.repo.repo, release_name, release_description, release_version);
-        coreExports.info(`Created release ${releaseId}`);
+        coreExports.info(`Created release id ${releaseId}`);
         coreExports.setOutput('release_id', releaseId);
         if (update_latest === 'true') {
             const latest = await updateLatest(octokit, githubExports.context.repo.owner, githubExports.context.repo.repo, githubExports.context.sha);

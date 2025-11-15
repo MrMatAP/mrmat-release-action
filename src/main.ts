@@ -21,7 +21,7 @@ export async function run(): Promise<void> {
             release_description,
             release_version
         )
-        core.info(`Created release ${releaseId}`)
+        core.info(`Created release id ${releaseId}`)
         core.setOutput('release_id', releaseId)
 
         if (update_latest === 'true') {
