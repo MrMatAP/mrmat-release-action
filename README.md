@@ -28,9 +28,13 @@ Whether to create or shift the 'latest' tag.
 
 ## Outputs
 
-### id
+### release_id
 
 The created release ID.
+
+### release_url
+
+The URL to the release, if update_latest was true
 
 ## Example usage
 

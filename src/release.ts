@@ -1,4 +1,3 @@
-import { RequestError } from '@octokit/request-error'
 import * as github from '@actions/github'
 import {
     Endpoints,
@@ -58,7 +57,10 @@ async function hasLatest(
         } satisfies GetRefParameterType)
         return true
     } catch (error) {
-        if (error instanceof RequestError && error.status === 404) {
+        // Treat any error that exposes a numeric status of 404 as "not found".
+        // This covers both Octokit RequestError and other HTTPError-like errors
+        // that carry a `status` field.
+        if ((error as { status?: number } | undefined)?.status === 404) {
             return false
         } else {
             throw error
