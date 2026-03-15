@@ -2,6 +2,10 @@ name: MrMat Release Action
 author: MrMat
 description: A GitHub Action to release a new version of a project.
 
+branding:
+    icon: fast-forward
+    color: purple
+
 inputs:
     github_token:
         description: Token to use for GitHub API requests.
@@ -27,5 +31,5 @@ outputs:
         description: The URL to the latest tag, if update_latest was true
 
 runs:
-    using: node20
+    using: node24
     main: dist/index.js
