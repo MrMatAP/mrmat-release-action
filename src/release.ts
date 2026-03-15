@@ -44,7 +44,7 @@ export async function createRelease(
     return release.data.id.toString()
 }
 
-async function hasLatest(
+async function hasLatestRelease(
     octokit: Octokit,
     owner: string,
     repo: string
@@ -68,7 +68,7 @@ async function hasLatest(
     }
 }
 
-export async function updateLatest(
+export async function updateLatestRelease(
     octokit: Octokit,
     owner: string,
     repo: string,
@@ -79,7 +79,7 @@ export async function updateLatest(
     >
     let latest: OctokitResponse<UpdateRefResponseType>
 
-    if (await hasLatest(octokit, owner, repo)) {
+    if (await hasLatestRelease(octokit, owner, repo)) {
         latest = await octokit.rest.git.updateRef({
             owner: owner,
             repo: repo,
