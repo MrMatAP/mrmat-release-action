@@ -1,31 +1,31 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { RequestError } from '@octokit/request-error'
-import { createRelease, updateLatest } from './release.js'
+import { createRelease, updateLatestRelease } from './release.js'
 
 export async function run(): Promise<void> {
     try {
-        const github_token: string = core.getInput('github_token')
-        const release_name: string = core.getInput('release_name')
-        const release_description: string = core.getInput('release_description')
-        const release_version: string = core.getInput('release_version')
-        const update_latest: string = core.getInput('update_latest')
+        const githubToken: string = core.getInput('github_token')
+        const releaseName: string = core.getInput('release_name')
+        const releaseDescription: string = core.getInput('release_description')
+        const releaseVersion: string = core.getInput('release_version')
+        const updateLatest: string = core.getInput('update_latest')
 
-        const octokit = github.getOctokit(github_token)
+        const octokit = github.getOctokit(githubToken)
 
         const releaseId = await createRelease(
             octokit,
             github.context.repo.owner,
             github.context.repo.repo,
-            release_name,
-            release_description,
-            release_version
+            releaseName,
+            releaseDescription,
+            releaseVersion
         )
         core.info(`Created release id ${releaseId}`)
         core.setOutput('release_id', releaseId)
 
-        if (update_latest === 'true') {
-            const latest = await updateLatest(
+        if (updateLatest === 'true') {
+            const latest = await updateLatestRelease(
                 octokit,
                 github.context.repo.owner,
                 github.context.repo.repo,

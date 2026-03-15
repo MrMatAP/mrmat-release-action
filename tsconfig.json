@@ -13,7 +13,7 @@
         "newLine": "lf",
         "noImplicitAny": true,
         "noUnusedLocals": true,
-        "noUnusedParameters": false,
+        "noUnusedParameters": true,
         "pretty": true,
         "resolveJsonModule": true,
         "strict": true,
