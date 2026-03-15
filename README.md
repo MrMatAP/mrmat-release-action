@@ -32,14 +32,14 @@ Whether to create or shift the 'latest' tag.
 
 The created release ID.
 
-### release_url
+### latest_url
 
-The URL to the release, if update_latest was true
+The URL to the latest release, if update_latest was true
 
 ## Example usage
 
 ```yaml
-uses: actions/mrmat-release-action@latest
+uses: MrMatAP/mrmat-release-action@latest
 with:
     github_token: sample-token
     release_name: Sample Release
@@ -52,7 +52,17 @@ with:
 
 Run `npm install` and then `npm run bundle`.
 
+## How to patch this
+
+```bash
+$ npm outdated
+$ npx npm-check-updates --format group -u
+$ npm install
+```
+
 ## How to test this
+
+Run 'npm run test' or 'jest'.
 
 ### Running the action locally
 
