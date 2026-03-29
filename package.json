@@ -40,7 +40,7 @@
         "@octokit/types": "^16.0.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.4",
+        "@eslint/js": "^10.0.1",
         "@github/local-action": "^7.0.1",
         "@jest/globals": "^30.3.0",
         "@rollup/plugin-commonjs": "^29.0.2",
@@ -49,16 +49,16 @@
         "@stylistic/eslint-plugin": "^5.10.0",
         "@types/jest": "^30.0.0",
         "@types/node": "^25.5.0",
-        "eslint": "^9.39.4",
+        "eslint": "^10.1.0",
         "jest": "^30.3.0",
         "jest-junit": "^16.0.0",
         "jiti": "^2.6.1",
         "prettier": "^3.8.1",
         "prettier-eslint": "^16.4.2",
-        "rollup": "^4.59.0",
+        "rollup": "^4.60.0",
         "ts-jest": "^29.4.6",
         "ts-jest-resolver": "^2.0.1",
-        "typescript": "^5.9.3",
-        "typescript-eslint": "^8.57.0"
+        "typescript": "^6.0.2",
+        "typescript-eslint": "^8.57.2"
     }
 }
